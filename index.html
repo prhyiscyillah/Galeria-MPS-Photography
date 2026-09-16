@@ -60,11 +60,33 @@
   .link-box { display:flex; gap:8px; align-items:center; background:var(--accent-bg); border:1px dashed var(--gold); border-radius:10px; padding:10px 12px; margin-top:10px; }
   .link-box input { border:none; background:transparent; color:var(--text); font-size:.82rem; flex:1; }
 
-  .cover { text-align:center; padding:36px 20px 24px; }
-  .cover .doc-icon { font-size:2.6rem; margin-bottom:6px; }
-  .cover h2 { font-family:'Playfair Display',serif; font-size:1.4rem; color:var(--text); margin:6px 0 4px; }
-  .cover p.sent { color:var(--muted); font-size:.88rem; }
-  .cover p.msg { font-size:.92rem; margin-top:14px; padding:12px 14px; background:var(--accent-bg); border-radius:10px; border:1px solid var(--border); }
+  .cover {
+    text-align:center; padding:44px 24px 32px; position:relative; overflow:hidden;
+    background: radial-gradient(circle at 50% 0%, color-mix(in srgb, var(--gold) 16%, var(--bg-elev)) 0%, var(--bg-elev) 62%);
+    border-top: 3px solid var(--gold);
+  }
+  .cover::before, .cover::after {
+    content:""; position:absolute; top:0; left:0; right:0; height:100%;
+    background-image: radial-gradient(circle, var(--gold) 1px, transparent 1.3px);
+    background-size: 22px 22px; opacity:.06; pointer-events:none;
+  }
+  .cover .frame {
+    position:relative; display:inline-flex; align-items:center; justify-content:center;
+    width:74px; height:74px; border-radius:50%; margin-bottom:14px;
+    background: var(--accent-bg); border:1.5px solid var(--gold);
+    box-shadow: 0 0 0 6px color-mix(in srgb, var(--gold) 14%, transparent), 0 8px 24px rgba(0,0,0,.12);
+  }
+  .cover .frame span { font-size:2rem; }
+  .cover .ornament { color:var(--gold); letter-spacing:.5em; font-size:.7rem; margin:2px 0 10px; opacity:.8; }
+  .cover h2 { font-family:'Playfair Display',serif; font-size:1.7rem; color:var(--text); margin:4px 0 6px; letter-spacing:.02em; }
+  .cover p.sent { color:var(--muted); font-size:.88rem; position:relative; z-index:1; }
+  .cover p.sent b { color: var(--gold); }
+  .cover .rule { width:60px; height:2px; margin:16px auto 0; background:linear-gradient(90deg, transparent, var(--gold), transparent); position:relative; z-index:1; }
+  .cover p.msg {
+    font-family:'Playfair Display',serif; font-style:italic; font-size:1.02rem; line-height:1.65;
+    margin-top:18px; padding:18px 20px; background:var(--accent-bg); border-radius:14px;
+    border:1px solid var(--border); position:relative; z-index:1; color:var(--text);
+  }
 
   .grid { column-count: 2; column-gap: 6px; margin-top:14px; }
   @media (min-width:520px){ .grid { column-count: 3; } }
@@ -201,7 +223,7 @@ function renderBuilder() {
       <input type="text" id="f_titulo" placeholder="Ex: Ensaio Gestante — Gabrielle">
 
       <label>Mensagem de entrega (opcional)</label>
-      <input type="text" id="f_mensagem" placeholder="Ex: Foi um prazer registrar esse momento! 💛">
+      <input type="text" id="f_mensagem" value="Foi um prazer registrar esse momento com vocês! 💛 Aqui está sua galeria completa — toque nas fotos pra ver em tela cheia ou salvar direto no celular. Espero que amem cada clique tanto quanto eu amei fazer esse trabalho.">
 
       <label>Links das fotos (um por linha)</label>
       <textarea id="f_fotos" placeholder="https://i.ibb.co/xxxx/foto1.jpg&#10;https://drive.google.com/file/d/xxxx/view&#10;https://i.ibb.co/yyyy/foto2.jpg"></textarea>
@@ -282,9 +304,11 @@ function renderGallery(payload) {
   const fotos = payload.fotos;
   app.innerHTML = `
     <div class="card cover">
-      <div class="doc-icon">🖼️</div>
+      <div class="frame"><span>📸</span></div>
+      <p class="ornament">✦ ✦ ✦</p>
       <h2>${esc(payload.titulo || 'Sua Galeria de Fotos')}</h2>
       <p class="sent">Entregue por Priscila Pires da Silva — MPS Photography, para <b>${esc(payload.clienteNome)}</b></p>
+      <div class="rule"></div>
       ${payload.mensagem ? `<p class="msg">${esc(payload.mensagem)}</p>` : ''}
     </div>
 
