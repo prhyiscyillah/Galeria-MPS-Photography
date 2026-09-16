@@ -108,15 +108,6 @@
   .thumb-row { display:flex; gap:8px; overflow-x:auto; padding:4px 0; }
   .thumb-row img { width:64px; height:64px; object-fit:cover; border-radius:8px; border:1px solid var(--border); }
 
-  .lightbox { position:fixed; inset:0; background:rgba(10,8,4,.94); z-index:1000; display:flex; align-items:center; justify-content:center; flex-direction:column; padding:14px; }
-  .lightbox img { max-width:100%; max-height:72vh; border-radius:8px; box-shadow:0 10px 40px rgba(0,0,0,.5); }
-  .lightbox .lb-bar { display:flex; gap:10px; margin-top:14px; width:100%; max-width:420px; }
-  .lightbox .lb-bar button { flex:1; }
-  .lightbox .lb-nav { position:absolute; top:50%; transform:translateY(-50%); background:rgba(255,255,255,.12); color:#fff; border:none; width:44px; height:44px; border-radius:50%; font-size:1.4rem; cursor:pointer; }
-  .lightbox .lb-prev { left:10px; } .lightbox .lb-next { right:10px; }
-  .lightbox .lb-close { position:absolute; top:16px; right:16px; background:rgba(255,255,255,.12); color:#fff; border:none; width:38px; height:38px; border-radius:50%; font-size:1.1rem; cursor:pointer; }
-  .lightbox .lb-count { color:#cfc6b3; font-size:.8rem; margin-top:8px; }
-
   .download-all { margin-top:18px; text-align:center; }
   .footer-tip { text-align:center; color:var(--muted); font-size:.78rem; margin-top:18px; line-height:1.6; }
   .footer-note { text-align:center; color:var(--muted); font-size:.72rem; margin-top:26px; line-height:1.6; }
@@ -316,10 +307,12 @@ function renderGallery(payload) {
       <h2 class="section">${fotos.length} foto${fotos.length>1?'s':''}</h2>
       <div class="grid" id="galleryGrid">
         ${fotos.map((u,i)=>`
-          <figure onclick="abrirLightbox(${i})">
-            <img src="${esc(u)}" loading="lazy" alt="Foto ${i+1}" onerror="fotoErro(this)">
-            <a class="dl-btn" href="${esc(u)}" download target="_blank" rel="noopener" onclick="event.stopPropagation()" aria-label="Baixar foto ${i+1}">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 21h14"/></svg>
+          <figure>
+            <a href="${esc(u)}" download target="_blank" rel="noopener" aria-label="Salvar foto ${i+1}">
+              <img src="${esc(u)}" loading="lazy" alt="Foto ${i+1}" onerror="fotoErro(this)">
+              <span class="dl-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 21h14"/></svg>
+              </span>
             </a>
           </figure>
         `).join('')}
@@ -331,42 +324,9 @@ function renderGallery(payload) {
         </div>
       ` : ''}
 
-      <p class="footer-tip">Para salvar uma foto: toque nela para abrir em tela cheia, depois toque e segure a imagem e escolha "Salvar na Galeria" (ou use o botão de compartilhar do seu celular).</p>
+      <p class="footer-tip">Toque em qualquer foto para abrir/salvar direto. Se abrir em outra aba, toque e segure a imagem e escolha "Salvar na Galeria".</p>
     </div>
   `;
-}
-
-function abrirLightbox(index) {
-  STATE.lightboxIndex = index;
-  const box = document.createElement('div');
-  box.className = 'lightbox';
-  box.id = 'lightboxOverlay';
-  box.innerHTML = lightboxInner();
-  document.body.appendChild(box);
-  box.addEventListener('click', (e) => { if (e.target === box) fecharLightbox(); });
-}
-function lightboxInner() {
-  const fotos = STATE.payload.fotos;
-  const i = STATE.lightboxIndex;
-  return `
-    <button class="lb-close" onclick="fecharLightbox()">✕</button>
-    ${fotos.length>1 ? `<button class="lb-nav lb-prev" onclick="navLightbox(-1)">‹</button>` : ''}
-    <img src="${esc(fotos[i])}" alt="Foto ${i+1}">
-    ${fotos.length>1 ? `<button class="lb-nav lb-next" onclick="navLightbox(1)">›</button>` : ''}
-    <div class="lb-bar">
-      <a class="btn secondary" style="text-decoration:none;text-align:center;" href="${esc(fotos[i])}" target="_blank" rel="noopener">Abrir em tela cheia</a>
-    </div>
-    <p class="lb-count">${i+1} de ${fotos.length}</p>
-  `;
-}
-function navLightbox(delta) {
-  const fotos = STATE.payload.fotos;
-  STATE.lightboxIndex = (STATE.lightboxIndex + delta + fotos.length) % fotos.length;
-  document.getElementById('lightboxOverlay').innerHTML = lightboxInner();
-}
-function fecharLightbox() {
-  const box = document.getElementById('lightboxOverlay');
-  if (box) box.remove();
 }
 </script>
 </body>
