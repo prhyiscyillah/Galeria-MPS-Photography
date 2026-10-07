@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Galeria de Entrega — MPS Photography</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f6f1e7; --bg-elev: #ffffff; --text: #211d15; --muted: #6f6656;
+    --gold: #8a6d3b; --gold-dark: #6e5730; --border: #e3dac4; --accent-bg: #fbf7ee;
+    --danger: #b3261e; --success: #1e6b3a; --shadow: 0 10px 30px rgba(30,24,10,0.08);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg:#1b1811; --bg-elev:#24201a; --text:#f2ecdd; --muted:#b7ac93;
+      --gold:#dcbb77; --gold-dark:#caa561; --border:#3c3527; --accent-bg:#29241a;
+      --shadow: 0 10px 30px rgba(0,0,0,0.35);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg:#1b1811; --bg-elev:#24201a; --text:#f2ecdd; --muted:#b7ac93;
+    --gold:#dcbb77; --gold-dark:#caa561; --border:#3c3527; --accent-bg:#29241a;
+    --shadow: 0 10px 30px rgba(0,0,0,0.35);
+  }
+  * { box-sizing:border-box; }
+  html,body{margin:0;padding:0;}
+  body {
+    background: var(--bg); color: var(--text);
+    font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+    line-height:1.55; min-height:100vh; padding: 24px 14px 60px;
+  }
+  .wrap { max-width: 900px; margin:0 auto; }
+  .brand { text-align:center; margin-bottom:16px; }
+  .brand h1 { font-family:'Playfair Display',Georgia,serif; color:var(--gold); font-size:1.9rem; letter-spacing:.04em; margin:0 0 2px; }
+  .brand p { margin:0; color:var(--muted); font-size:.85rem; letter-spacing:.05em; }
+  .hr { height:1px; background:linear-gradient(90deg,transparent,var(--gold),transparent); margin:16px 0 20px; opacity:.6; }
+  .card { background:var(--bg-elev); border:1px solid var(--border); border-radius:14px; padding:20px 18px; box-shadow:var(--shadow); margin-bottom:16px; }
+  h2.section { font-family:'Playfair Display',Georgia,serif; color:var(--gold); font-size:1.05rem; text-transform:uppercase; letter-spacing:.06em; margin:0 0 12px; border-bottom:1px solid var(--border); padding-bottom:8px; }
+  label { display:block; font-size:.85rem; font-weight:600; margin:14px 0 5px; }
+  label.first { margin-top:0; }
+  input[type=text], textarea {
+    width:100%; padding:11px 12px; border-radius:9px; border:1px solid var(--border);
+    background:var(--accent-bg); color:var(--text); font-size:.95rem; font-family:inherit;
+  }
+  textarea { resize:vertical; min-height:110px; font-family: ui-monospace, monospace; font-size:.82rem; }
+  .hint { font-size:.76rem; color:var(--muted); margin-top:4px; }
+  button, .btn {
+    font-family:'Inter',sans-serif; font-weight:700; font-size:.95rem; letter-spacing:.02em;
+    border:none; border-radius:10px; padding:13px 22px; cursor:pointer;
+    background:var(--gold); color:#fff; width:100%; transition:background .15s, transform .05s;
+  }
+  button:hover,.btn:hover{ background:var(--gold-dark); }
+  button:active,.btn:active{ transform:scale(0.98); }
+  button.secondary { background:transparent; color:var(--gold); border:1.5px solid var(--gold); }
+  .muted{ color:var(--muted); } .center{ text-align:center; } .small{ font-size:.8rem; }
+  .error-msg { color:var(--danger); font-size:.85rem; margin-top:8px; display:none; }
+  .link-box { display:flex; gap:8px; align-items:center; background:var(--accent-bg); border:1px dashed var(--gold); border-radius:10px; padding:10px 12px; margin-top:10px; }
+  .link-box input { border:none; background:transparent; color:var(--text); font-size:.82rem; flex:1; }
+
+  .cover {
+    text-align:center; padding:44px 24px 32px; position:relative; overflow:hidden;
+    background: radial-gradient(circle at 50% 0%, color-mix(in srgb, var(--gold) 16%, var(--bg-elev)) 0%, var(--bg-elev) 62%);
+    border-top: 3px solid var(--gold);
+  }
+  .cover::before, .cover::after {
+    content:""; position:absolute; top:0; left:0; right:0; height:100%;
+    background-image: radial-gradient(circle, var(--gold) 1px, transparent 1.3px);
+    background-size: 22px 22px; opacity:.06; pointer-events:none;
+  }
+  .cover .frame {
+    position:relative; display:inline-flex; align-items:center; justify-content:center;
+    width:74px; height:74px; border-radius:50%; margin-bottom:14px;
+    background: var(--accent-bg); border:1.5px solid var(--gold);
+    box-shadow: 0 0 0 6px color-mix(in srgb, var(--gold) 14%, transparent), 0 8px 24px rgba(0,0,0,.12);
+  }
+  .cover .frame span { font-size:2rem; }
+  .cover .ornament { color:var(--gold); letter-spacing:.5em; font-size:.7rem; margin:2px 0 10px; opacity:.8; }
+  .cover h2 { font-family:'Playfair Display',serif; font-size:1.7rem; color:var(--text); margin:4px 0 6px; letter-spacing:.02em; }
+  .cover p.sent { color:var(--muted); font-size:.88rem; position:relative; z-index:1; }
+  .cover p.sent b { color: var(--gold); }
+  .cover .rule { width:60px; height:2px; margin:16px auto 0; background:linear-gradient(90deg, transparent, var(--gold), transparent); position:relative; z-index:1; }
+  .cover p.msg {
+    font-family:'Playfair Display',serif; font-style:italic; font-size:1.02rem; line-height:1.65;
+    margin-top:18px; padding:18px 20px; background:var(--accent-bg); border-radius:14px;
+    border:1px solid var(--border); position:relative; z-index:1; color:var(--text);
+  }
+
+  .grid { column-count: 2; column-gap: 6px; margin-top:14px; }
+  @media (min-width:520px){ .grid { column-count: 3; } }
+  .grid figure { margin:0 0 6px; break-inside:avoid; position:relative; border-radius:10px; overflow:hidden; background:var(--accent-bg); cursor:pointer; line-height:0; }
+  .grid img { width:100%; display:block; transition:transform .2s; }
+  .grid figure:active img { transform:scale(0.97); }
+  .grid figure .dl-btn {
+    position:absolute; bottom:8px; right:8px; width:34px; height:34px; border-radius:50%;
+    background:rgba(20,16,8,.6); color:#fff; display:flex; align-items:center; justify-content:center;
+    text-decoration:none; backdrop-filter:blur(2px);
+  }
+  .grid figure .dl-btn svg { width:16px; height:16px; }
+  .grid figure .img-err {
+    min-height:110px; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    text-align:center; font-size:.72rem; color:var(--danger); background:#fdecea; padding:10px; line-height:1.5;
+  }
+  .grid figure .img-err span { color:#8a4a44; font-size:.66rem; }
+
+  .thumb-row { display:flex; gap:8px; overflow-x:auto; padding:4px 0; }
+  .thumb-row img { width:64px; height:64px; object-fit:cover; border-radius:8px; border:1px solid var(--border); }
+
+  .download-all { margin-top:18px; text-align:center; }
+  .footer-tip { text-align:center; color:var(--muted); font-size:.78rem; margin-top:18px; line-height:1.6; }
+  .footer-note { text-align:center; color:var(--muted); font-size:.72rem; margin-top:26px; line-height:1.6; }
+  .hidden { display:none !important; }
+  .error-msg { }
+
+  /* Visualizador em tela cheia */
+  #lightbox {
+    position:fixed; inset:0; z-index:1000; background:rgba(10,8,4,.96);
+    display:none; flex-direction:column; align-items:center; justify-content:center;
+    touch-action:pan-y;
+  }
+  #lightbox.open { display:flex; }
+  #lightbox .lb-stage { flex:1; width:100%; display:flex; align-items:center; justify-content:center; padding:56px 8px 8px; min-height:0; }
+  #lightbox img { max-width:100%; max-height:100%; object-fit:contain; display:block; border-radius:4px; }
+  #lightbox .lb-top { position:absolute; top:0; left:0; right:0; display:flex; justify-content:space-between; align-items:center; padding:12px 14px; color:#f2ecdd; font-size:.85rem; }
+  #lightbox .lb-btn { width:auto; background:rgba(255,255,255,.14); color:#fff; border-radius:999px; padding:9px 16px; font-size:.85rem; text-decoration:none; backdrop-filter:blur(4px); }
+  #lightbox .lb-nav { position:absolute; top:50%; transform:translateY(-50%); width:46px; height:46px; border-radius:50%; padding:0; font-size:1.6rem; line-height:1; background:rgba(255,255,255,.14); color:#fff; }
+  #lightbox .lb-prev { left:8px; } #lightbox .lb-next { right:8px; }
+  #lightbox .lb-hint { color:#b7ac93; font-size:.72rem; text-align:center; padding:8px 12px 18px; }
+  #fatalErrorBox { position:sticky; top:0; z-index:999; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="brand">
+    <h1>MPS PHOTOGRAPHY</h1>
+    <p>ensaios &amp; retratos</p>
+  </div>
+  <div class="hr"></div>
+  <div id="app"></div>
+  <div class="footer-note">Galeria de entrega gerada digitalmente pela MPS Photography.</div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script>
+/* ---------- CONFIGURAÇÃO DO FIREBASE ----------
+   Mesmo projeto já usado pelo site de seleção de fotos
+   (Fotoalbum-MPS), só numa coleção separada ("entregas") para
+   não misturar com as galerias de seleção.
+------------------------------------------------- */
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyDOMwJL3pf-4Jo-k70UiU7hh1yBVN_PnN8",
+  authDomain: "fotoalbum-mps.firebaseapp.com",
+  projectId: "fotoalbum-mps",
+  storageBucket: "fotoalbum-mps.firebasestorage.app",
+  messagingSenderId: "216259552727",
+  appId: "1:216259552727:web:fe01c5bdc0f5f962d4d792"
+};
+firebase.initializeApp(FIREBASE_CONFIG);
+const db = firebase.firestore();
+
+function gerarIdCurto() {
+  const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+  let s = '';
+  for (let i = 0; i < 7; i++) s += chars[Math.floor(Math.random() * chars.length)];
+  return s;
+}
+</script>
+<script>
+function esc(s){ return (s||'').toString().replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function fotoErro(img) {
+  const fig = img.closest('figure');
+  if (fig) fig.innerHTML = '<div class="img-err">⚠️<br>Foto não carregou<br><span>confira o link</span></div>';
+}
+
+function showFatalError(msg) {
+  let box = document.getElementById('fatalErrorBox');
+  if (!box) {
+    box = document.createElement('div');
+    box.id = 'fatalErrorBox';
+    box.style.cssText = 'background:#b3261e;color:#fff;padding:10px 14px;font-size:.8rem;border-radius:8px;margin-bottom:14px;white-space:pre-wrap;';
+    document.body.insertBefore(box, document.body.firstChild);
+  }
+  box.textContent = '⚠️ Erro: ' + msg;
+}
+window.addEventListener('error', (e) => showFatalError(e.message || String(e.error)));
+window.addEventListener('unhandledrejection', (e) => showFatalError((e.reason && e.reason.message) || String(e.reason)));
+
+function encodePayload(obj) {
+  const json = JSON.stringify(obj);
+  return btoa(unescape(encodeURIComponent(json))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+}
+function decodePayload(str) {
+  try {
+    let b64 = str.replace(/-/g,'+').replace(/_/g,'/');
+    while (b64.length % 4) b64 += '=';
+    return JSON.parse(decodeURIComponent(escape(atob(b64))));
+  } catch (e) { return null; }
+}
+
+// Converte um link comum do Google Drive (ou Fotos) em link de imagem direta.
+// ImgBB e outros hosts de imagem direta passam sem alteração.
+function convertToDirectImage(url) {
+  url = (url || '').trim();
+  if (!url) return '';
+  const drive = url.match(/drive\.google\.com\/file\/d\/([^/]+)/) || url.match(/[?&]id=([^&]+)/);
+  if (drive && drive[1]) {
+    // O padrão "uc?export=view" costuma ser bloqueado pelo Google em
+    // muitas requisições seguidas (mostra ícone quebrado no celular).
+    // Este formato via googleusercontent é mais estável para hotlink.
+    return `https://lh3.googleusercontent.com/d/${drive[1]}=w1000`;
+  }
+  return url;
+}
+
+const app = document.getElementById('app');
+const params = new URLSearchParams(location.search);
+const gParam = params.get('g'); // novo formato: link curto, dados no Firebase
+const dParam = params.get('d'); // formato antigo: dados embutidos na própria URL (links já enviados)
+const STATE = { payload: null, lightboxIndex: 0 };
+
+function renderLoading() {
+  app.innerHTML = `<div class="card center"><p class="muted">Carregando galeria...</p></div>`;
+}
+
+async function init() {
+  if (gParam) {
+    renderLoading();
+    try {
+      const doc = await db.collection('entregas').doc(gParam).get();
+      const payload = doc.exists ? doc.data() : null;
+      if (!payload || !Array.isArray(payload.fotos) || payload.fotos.length === 0) {
+        renderInvalid();
+      } else {
+        STATE.payload = payload;
+        try { renderGallery(payload); } catch (e) { showFatalError('ao montar a galeria: ' + e.message); }
+      }
+    } catch (e) {
+      showFatalError('ao carregar a galeria do banco de dados: ' + e.message);
+    }
+  } else if (dParam) {
+    const payload = decodePayload(dParam);
+    if (!payload || !Array.isArray(payload.fotos) || payload.fotos.length === 0) {
+      renderInvalid();
+    } else {
+      STATE.payload = payload;
+      try { renderGallery(payload); } catch (e) { showFatalError('ao montar a galeria: ' + e.message); }
+    }
+  } else {
+    try { renderBuilder(); } catch (e) { showFatalError('ao montar o painel: ' + e.message); }
+  }
+}
+init();
+
+function renderInvalid() {
+  app.innerHTML = `
+    <div class="card center">
+      <p style="font-size:2rem;margin:0 0 8px;">⚠️</p>
+      <h2 class="section" style="border:none;">Link inválido ou sem fotos</h2>
+      <p class="muted">Não foi possível carregar esta galeria. Peça um novo link para a fotógrafa.</p>
+    </div>`;
+}
+
+/* --------------------------- PAINEL (criar galeria) --------------------------- */
+function renderBuilder() {
+  app.innerHTML = `
+    <div class="card">
+      <h2 class="section">Painel — Nova Galeria de Entrega</h2>
+      <p class="muted small" style="margin-top:-6px;">Cole os links das fotos já hospedadas (ImgBB, Google Drive etc). No final você recebe um link visual para enviar ao cliente.</p>
+
+      <label class="first">Nome do cliente</label>
+      <input type="text" id="f_cliente" placeholder="Ex: Gabrielle Aparecida Bastos">
+
+      <label>Título da galeria</label>
+      <input type="text" id="f_titulo" placeholder="Ex: Ensaio Gestante — Gabrielle">
+
+      <label>Mensagem de entrega (opcional)</label>
+      <input type="text" id="f_mensagem" value="Foi um prazer registrar esse momento com vocês! 💛 Aqui está sua galeria completa — toque nas fotos pra ver em tela cheia ou salvar direto no celular. Espero que amem cada clique tanto quanto eu amei fazer esse trabalho.">
+
+      <label>Links das fotos (um por linha)</label>
+      <textarea id="f_fotos" placeholder="https://i.ibb.co/xxxx/foto1.jpg&#10;https://drive.google.com/file/d/xxxx/view&#10;https://i.ibb.co/yyyy/foto2.jpg"></textarea>
+      <p class="hint">Links do Google Drive são convertidos automaticamente, mas o Drive às vezes bloqueia exibição direta em muitas fotos — <b>ImgBB costuma ser mais confiável</b> pra esse tipo de galeria. Cada linha = 1 foto.</p>
+
+      <label>Link da pasta do Google Drive para "baixar tudo" (opcional)</label>
+      <input type="text" id="f_drive" placeholder="https://drive.google.com/drive/folders/xxxx">
+      <p class="hint">Se preenchido, aparece um botão grande "Baixar todas as fotos" que abre essa pasta — o Drive já baixa tudo em ZIP automaticamente. Lembre-se de deixar a pasta com acesso "Qualquer pessoa com o link".</p>
+
+      <button type="button" style="margin-top:18px;" onclick="prevaliarFotos()">Pré-visualizar fotos coladas</button>
+      <div id="previewGrid" class="grid hidden" style="margin-top:14px;"></div>
+
+      <button type="button" id="btnGerarLink" style="margin-top:18px;" onclick="gerarLinkGaleria()">Gerar link da galeria</button>
+      <p class="error-msg" id="builderError">Preencha o nome do cliente e cole ao menos 1 link de foto.</p>
+
+      <div id="resultBox" class="hidden" style="margin-top:18px;">
+        <label class="first">Link para enviar ao cliente</label>
+        <div class="link-box">
+          <input type="text" id="linkOut" readonly>
+          <button type="button" style="width:auto;padding:8px 14px;" onclick="copiarLink()">Copiar</button>
+        </div>
+        <button type="button" class="secondary" style="margin-top:12px;" onclick="abrirPreview()">Pré-visualizar como o cliente verá</button>
+      </div>
+    </div>
+  `;
+}
+
+function parseFotosTextarea() {
+  const raw = document.getElementById('f_fotos').value;
+  return raw.split('\n').map(l => l.trim()).filter(Boolean).map(convertToDirectImage);
+}
+
+function prevaliarFotos() {
+  const fotos = parseFotosTextarea();
+  const grid = document.getElementById('previewGrid');
+  if (!fotos.length) { grid.classList.add('hidden'); return; }
+  grid.innerHTML = fotos.map((u, i) => `
+    <figure><img src="${esc(u)}" loading="lazy" onerror="fotoErro(this)"><span class="num">${i+1}</span></figure>
+  `).join('');
+  grid.classList.remove('hidden');
+}
+
+async function gerarLinkGaleria() {
+  const cliente = document.getElementById('f_cliente').value.trim();
+  const fotos = parseFotosTextarea();
+  const errEl = document.getElementById('builderError');
+  if (!cliente || !fotos.length) {
+    errEl.style.display = 'block';
+    return;
+  }
+  errEl.style.display = 'none';
+
+  const payload = {
+    clienteNome: cliente,
+    titulo: document.getElementById('f_titulo').value.trim(),
+    mensagem: document.getElementById('f_mensagem').value.trim(),
+    fotos: fotos,
+    driveFolderLink: document.getElementById('f_drive').value.trim(),
+    criadoEm: new Date().toISOString(),
+  };
+
+  const btn = document.getElementById('btnGerarLink');
+  btn.disabled = true;
+  btn.textContent = 'Salvando...';
+
+  try {
+    // Tenta um id curto; no raríssimo caso de já existir, gera outro.
+    let id = gerarIdCurto();
+    for (let tentativas = 0; tentativas < 3; tentativas++) {
+      const existente = await db.collection('entregas').doc(id).get();
+      if (!existente.exists) break;
+      id = gerarIdCurto();
+    }
+    await db.collection('entregas').doc(id).set(payload);
+
+    const url = location.origin + location.pathname + '?g=' + id;
+    document.getElementById('linkOut').value = url;
+    document.getElementById('resultBox').classList.remove('hidden');
+    window._previewUrl = url;
+  } catch (e) {
+    showFatalError('ao salvar a galeria no banco de dados: ' + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Gerar link da galeria';
+  }
+}
+
+function copiarLink() {
+  const input = document.getElementById('linkOut');
+  input.select(); input.setSelectionRange(0, 99999);
+  try { document.execCommand('copy'); } catch(e) {}
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(input.value).catch(()=>{});
+}
+function abrirPreview() { if (window._previewUrl) location.href = window._previewUrl; }
+
+/* --------------------------- GALERIA (visão do cliente) --------------------------- */
+function renderGallery(payload) {
+  const fotos = payload.fotos;
+  app.innerHTML = `
+    <div class="card cover">
+      <div class="frame"><span>📸</span></div>
+      <p class="ornament">✦ ✦ ✦</p>
+      <h2>${esc(payload.titulo || 'Sua Galeria de Fotos')}</h2>
+      <p class="sent">Entregue por Priscila Pires da Silva — MPS Photography, para <b>${esc(payload.clienteNome)}</b></p>
+      <div class="rule"></div>
+      ${payload.mensagem ? `<p class="msg">${esc(payload.mensagem)}</p>` : ''}
+    </div>
+
+    <div class="card">
+      <h2 class="section">${fotos.length} foto${fotos.length>1?'s':''}</h2>
+      <div class="grid" id="galleryGrid">
+        ${fotos.map((u,i)=>`
+          <figure onclick="abrirLightbox(${i})" role="button" aria-label="Ver foto ${i+1} em tela cheia">
+            <img src="${esc(u)}" loading="lazy" alt="Foto ${i+1}" onerror="fotoErro(this)">
+            <span class="dl-btn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"/><path d="M9 21H3v-6"/><path d="M21 3l-7 7"/><path d="M3 21l7-7"/></svg>
+            </span>
+          </figure>
+        `).join('')}
+      </div>
+
+      ${payload.driveFolderLink ? `
+        <div class="download-all">
+          <a class="btn" style="display:block;text-decoration:none;" href="${esc(payload.driveFolderLink)}" target="_blank" rel="noopener">📥 Baixar todas as fotos (ZIP)</a>
+        </div>
+      ` : ''}
+
+      <p class="footer-tip">Toque em qualquer foto para ver em tela cheia. Para salvar no celular, toque e segure a foto e escolha "Salvar na Galeria" (ou use o botão Salvar).</p>
+    </div>
+
+    <div id="lightbox" aria-modal="true" role="dialog">
+      <div class="lb-top">
+        <span id="lbCount"></span>
+        <span style="display:flex;gap:8px;">
+          <a id="lbSave" class="lb-btn" href="#" target="_blank" rel="noopener" download>⬇ Salvar</a>
+          <button type="button" class="lb-btn" onclick="fecharLightbox()">✕ Fechar</button>
+        </span>
+      </div>
+      <div class="lb-stage"><img id="lbImg" alt=""></div>
+      <button type="button" class="lb-nav lb-prev" onclick="navLightbox(-1)" aria-label="Foto anterior">‹</button>
+      <button type="button" class="lb-nav lb-next" onclick="navLightbox(1)" aria-label="Próxima foto">›</button>
+      <div class="lb-hint">Deslize para o lado para trocar de foto · toque e segure a foto para salvar</div>
+    </div>
+  `;
+  initLightbox();
+}
+
+/* --------------------------- VISUALIZADOR EM TELA CHEIA --------------------------- */
+function abrirLightbox(i) {
+  STATE.lightboxIndex = i;
+  mostrarLightbox();
+  document.getElementById('lightbox').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function fecharLightbox() {
+  document.getElementById('lightbox').classList.remove('open');
+  document.body.style.overflow = '';
+}
+function navLightbox(delta) {
+  const n = STATE.payload.fotos.length;
+  STATE.lightboxIndex = (STATE.lightboxIndex + delta + n) % n;
+  mostrarLightbox();
+}
+function mostrarLightbox() {
+  const fotos = STATE.payload.fotos;
+  const i = STATE.lightboxIndex;
+  const url = fotos[i];
+  document.getElementById('lbImg').src = url;
+  document.getElementById('lbSave').href = url;
+  document.getElementById('lbCount').textContent = (i + 1) + ' / ' + fotos.length;
+}
+function initLightbox() {
+  const lb = document.getElementById('lightbox');
+  let x0 = null;
+  lb.addEventListener('touchstart', e => { x0 = e.touches[0].clientX; }, { passive: true });
+  lb.addEventListener('touchend', e => {
+    if (x0 === null) return;
+    const dx = e.changedTouches[0].clientX - x0;
+    if (Math.abs(dx) > 50) navLightbox(dx < 0 ? 1 : -1);
+    x0 = null;
+  }, { passive: true });
+  document.addEventListener('keydown', e => {
+    if (!lb.classList.contains('open')) return;
+    if (e.key === 'Escape') fecharLightbox();
+    if (e.key === 'ArrowRight') navLightbox(1);
+    if (e.key === 'ArrowLeft') navLightbox(-1);
+  });
+}
+</script>
+</body>
+</html>
