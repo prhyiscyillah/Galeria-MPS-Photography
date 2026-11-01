@@ -41,7 +41,7 @@
   h2.section { font-family:'Playfair Display',Georgia,serif; color:var(--gold); font-size:1.05rem; text-transform:uppercase; letter-spacing:.06em; margin:0 0 12px; border-bottom:1px solid var(--border); padding-bottom:8px; }
   label { display:block; font-size:.85rem; font-weight:600; margin:14px 0 5px; }
   label.first { margin-top:0; }
-  input[type=text], textarea {
+  input[type=text], input[type=password], input[type=number], textarea {
     width:100%; padding:11px 12px; border-radius:9px; border:1px solid var(--border);
     background:var(--accent-bg); color:var(--text); font-size:.95rem; font-family:inherit;
   }
@@ -129,6 +129,29 @@
   #lightbox .lb-prev { left:8px; } #lightbox .lb-next { right:8px; }
   #lightbox .lb-hint { color:#b7ac93; font-size:.72rem; text-align:center; padding:8px 12px 18px; }
   #fatalErrorBox { position:sticky; top:0; z-index:999; }
+
+  /* Favoritas, numeração, barra e aviso */
+  .grid figure .num { position:absolute; bottom:8px; left:8px; background:rgba(20,16,8,.6); color:#fff; font-size:.68rem; line-height:1; padding:5px 7px; border-radius:999px; font-weight:600; }
+  .grid figure .fav-btn {
+    position:absolute; top:8px; right:8px; width:36px; height:36px; border-radius:50%; padding:0;
+    background:rgba(20,16,8,.55); color:#fff; font-size:1.2rem; line-height:1; display:flex;
+    align-items:center; justify-content:center; backdrop-filter:blur(2px);
+  }
+  .grid figure.is-fav .fav-btn { background:#fff; color:#c0392b; }
+  .grid figure.is-fav { outline:2px solid var(--gold); outline-offset:-2px; }
+  .grid figure.hide { display:none; }
+  body.has-favbar { padding-bottom: 110px; }
+  #favBar {
+    position:fixed; left:0; right:0; bottom:0; z-index:900; display:none;
+    background:var(--bg-elev); border-top:1px solid var(--gold); box-shadow:0 -8px 24px rgba(0,0,0,.12);
+    padding:10px 12px calc(10px + env(safe-area-inset-bottom)); gap:8px; flex-wrap:wrap; align-items:center; justify-content:space-between;
+  }
+  #favBar.show { display:flex; }
+  #favBar .fav-count { font-weight:700; color:var(--gold); font-size:.95rem; }
+  #favBar .fav-actions { display:flex; gap:8px; flex-wrap:wrap; }
+  #favBar button { width:auto; padding:9px 14px; font-size:.82rem; }
+  #toast { position:fixed; left:50%; bottom:90px; transform:translateX(-50%); background:#211d15; color:#fff; padding:10px 16px; border-radius:10px; font-size:.82rem; z-index:2000; display:none; max-width:90%; text-align:center; }
+  #lightbox .lb-fav.on { background:#fff; color:#c0392b; }
 </style>
 </head>
 <body>
@@ -219,7 +242,65 @@ const app = document.getElementById('app');
 const params = new URLSearchParams(location.search);
 const gParam = params.get('g'); // novo formato: link curto, dados no Firebase
 const dParam = params.get('d'); // formato antigo: dados embutidos na própria URL (links já enviados)
-const STATE = { payload: null, lightboxIndex: 0 };
+const STATE = { payload: null, lightboxIndex: 0, favs: new Set(), onlyFavs: false };
+const GALERIA_KEY = gParam ? ('g_' + gParam) : ('d_' + (dParam || '').slice(0, 32));
+
+async function sha256(txt) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(txt));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+function toast(msg) {
+  let t = document.getElementById('toast');
+  if (!t) { t = document.createElement('div'); t.id = 'toast'; document.body.appendChild(t); }
+  t.textContent = msg; t.style.display = 'block';
+  clearTimeout(t._h); t._h = setTimeout(() => { t.style.display = 'none'; }, 4000);
+}
+function carregarFavs() {
+  try { const a = JSON.parse(localStorage.getItem('favs_' + GALERIA_KEY) || '[]'); STATE.favs = new Set(a); } catch (e) { STATE.favs = new Set(); }
+}
+function salvarFavs() {
+  try { localStorage.setItem('favs_' + GALERIA_KEY, JSON.stringify([...STATE.favs])); } catch (e) {}
+}
+
+/* Porta de entrada: validade e senha antes de mostrar a galeria */
+function abrirGaleria(payload) {
+  STATE.payload = payload;
+  if (payload.expiraEm && new Date(payload.expiraEm) < new Date()) { renderExpirada(); return; }
+  let liberado = false;
+  try { liberado = !payload.senhaHash || sessionStorage.getItem('ok_' + GALERIA_KEY) === payload.senhaHash; } catch (e) {}
+  if (!liberado) { renderSenha(payload); return; }
+  try { renderGallery(payload); } catch (e) { showFatalError('ao montar a galeria: ' + e.message); }
+}
+function renderExpirada() {
+  app.innerHTML = `
+    <div class="card center">
+      <p style="font-size:2rem;margin:0 0 8px;">⏳</p>
+      <h2 class="section" style="border:none;">Link expirado</h2>
+      <p class="muted">O prazo desta galeria terminou. Peça um novo link para a fotógrafa.</p>
+    </div>`;
+}
+function renderSenha(payload) {
+  app.innerHTML = `
+    <div class="card center">
+      <p style="font-size:2rem;margin:0 0 8px;">🔒</p>
+      <h2 class="section" style="border:none;">${esc(payload.titulo || 'Galeria protegida')}</h2>
+      <p class="muted small">Digite a senha que a fotógrafa enviou para ver suas fotos.</p>
+      <input type="password" id="senhaIn" placeholder="Senha" autocomplete="off" style="text-align:center;margin-top:10px;">
+      <button type="button" style="margin-top:12px;" id="senhaBtn">Entrar</button>
+      <p class="error-msg" id="senhaErr">Senha incorreta.</p>
+    </div>`;
+  const tentar = async () => {
+    const h = await sha256(document.getElementById('senhaIn').value.trim());
+    if (h === payload.senhaHash) {
+      try { sessionStorage.setItem('ok_' + GALERIA_KEY, h); } catch (e) {}
+      try { renderGallery(payload); } catch (e) { showFatalError('ao montar a galeria: ' + e.message); }
+    } else {
+      document.getElementById('senhaErr').style.display = 'block';
+    }
+  };
+  document.getElementById('senhaBtn').addEventListener('click', tentar);
+  document.getElementById('senhaIn').addEventListener('keydown', e => { if (e.key === 'Enter') tentar(); });
+}
 
 function renderLoading() {
   app.innerHTML = `<div class="card center"><p class="muted">Carregando galeria...</p></div>`;
@@ -234,8 +315,7 @@ async function init() {
       if (!payload || !Array.isArray(payload.fotos) || payload.fotos.length === 0) {
         renderInvalid();
       } else {
-        STATE.payload = payload;
-        try { renderGallery(payload); } catch (e) { showFatalError('ao montar a galeria: ' + e.message); }
+        abrirGaleria(payload);
       }
     } catch (e) {
       showFatalError('ao carregar a galeria do banco de dados: ' + e.message);
@@ -245,8 +325,7 @@ async function init() {
     if (!payload || !Array.isArray(payload.fotos) || payload.fotos.length === 0) {
       renderInvalid();
     } else {
-      STATE.payload = payload;
-      try { renderGallery(payload); } catch (e) { showFatalError('ao montar a galeria: ' + e.message); }
+      abrirGaleria(payload);
     }
   } else {
     try { renderBuilder(); } catch (e) { showFatalError('ao montar o painel: ' + e.message); }
@@ -286,6 +365,22 @@ function renderBuilder() {
       <label>Link da pasta do Google Drive para "baixar tudo" (opcional)</label>
       <input type="text" id="f_drive" placeholder="https://drive.google.com/drive/folders/xxxx">
       <p class="hint">Se preenchido, aparece um botão grande "Baixar todas as fotos" que abre essa pasta — o Drive já baixa tudo em ZIP automaticamente. Lembre-se de deixar a pasta com acesso "Qualquer pessoa com o link".</p>
+
+      <label>Senha da galeria (opcional)</label>
+      <input type="text" id="f_senha" placeholder="Ex: gabi2026" autocomplete="off">
+      <p class="hint">Se preenchida, o cliente precisa digitar essa senha para ver as fotos.</p>
+
+      <label>Validade do link, em dias (opcional)</label>
+      <input type="number" id="f_dias" min="1" placeholder="Ex: 30">
+      <p class="hint">Depois desse prazo a galeria mostra "link expirado". Vazio = não expira.</p>
+
+      <label>WhatsApp para receber as favoritas</label>
+      <input type="text" id="f_whats" value="5511914746140" placeholder="5511999999999">
+      <p class="hint">Com DDI e DDD, só números. O cliente marca ♥ nas fotos e envia a lista por aqui. Vazio = sem botão de WhatsApp.</p>
+
+      <label style="display:flex;align-items:center;gap:8px;margin-top:16px;">
+        <input type="checkbox" id="f_download" checked style="width:auto;"> Permitir download das fotos
+      </label>
 
       <button type="button" style="margin-top:18px;" onclick="prevaliarFotos()">Pré-visualizar fotos coladas</button>
       <div id="previewGrid" class="grid hidden" style="margin-top:14px;"></div>
@@ -337,13 +432,21 @@ async function gerarLinkGaleria() {
     fotos: fotos,
     driveFolderLink: document.getElementById('f_drive').value.trim(),
     criadoEm: new Date().toISOString(),
+    permitirDownload: document.getElementById('f_download').checked,
   };
+
+  const whats = document.getElementById('f_whats').value.replace(/\D/g, '');
+  if (whats) payload.whatsapp = whats;
+  const dias = parseInt(document.getElementById('f_dias').value, 10);
+  if (dias > 0) payload.expiraEm = new Date(Date.now() + dias * 86400000).toISOString();
+  const senha = document.getElementById('f_senha').value.trim();
 
   const btn = document.getElementById('btnGerarLink');
   btn.disabled = true;
   btn.textContent = 'Salvando...';
 
   try {
+    if (senha) payload.senhaHash = await sha256(senha);
     // Tenta um id curto; no raríssimo caso de já existir, gera outro.
     let id = gerarIdCurto();
     for (let tentativas = 0; tentativas < 3; tentativas++) {
@@ -392,27 +495,36 @@ function renderGallery(payload) {
         ${fotos.map((u,i)=>`
           <figure onclick="abrirLightbox(${i})" role="button" aria-label="Ver foto ${i+1} em tela cheia">
             <img src="${esc(u)}" loading="lazy" alt="Foto ${i+1}" onerror="fotoErro(this)">
-            <span class="dl-btn">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"/><path d="M9 21H3v-6"/><path d="M21 3l-7 7"/><path d="M3 21l7-7"/></svg>
-            </span>
+            <button type="button" class="fav-btn" onclick="event.stopPropagation();toggleFav(${i})" aria-label="Favoritar foto ${i+1}">♡</button>
+            <span class="num">${i+1}</span>
           </figure>
         `).join('')}
       </div>
 
-      ${payload.driveFolderLink ? `
+      ${(payload.driveFolderLink && payload.permitirDownload !== false) ? `
         <div class="download-all">
           <a class="btn" style="display:block;text-decoration:none;" href="${esc(payload.driveFolderLink)}" target="_blank" rel="noopener">📥 Baixar todas as fotos (ZIP)</a>
         </div>
       ` : ''}
 
-      <p class="footer-tip">Toque em qualquer foto para ver em tela cheia. Para salvar no celular, toque e segure a foto e escolha "Salvar na Galeria" (ou use o botão Salvar).</p>
+      <p class="footer-tip">Toque em ♡ para marcar suas favoritas${payload.whatsapp ? ' e enviar a lista para a fotógrafa pelo WhatsApp' : ''}. Toque na foto para ver em tela cheia${payload.permitirDownload !== false ? ' e use o botão Salvar para baixar' : ''}.</p>
+    </div>
+
+    <div id="favBar">
+      <span class="fav-count" id="favCount"></span>
+      <span class="fav-actions">
+        <button type="button" class="secondary" id="favFilterBtn" onclick="toggleSoFavs()">Só favoritas</button>
+        ${payload.permitirDownload !== false ? `<button type="button" class="secondary" onclick="baixarFavoritas()">⬇ Baixar</button>` : ''}
+        ${payload.whatsapp ? `<button type="button" onclick="enviarFavoritas()">Enviar no WhatsApp</button>` : ''}
+      </span>
     </div>
 
     <div id="lightbox" aria-modal="true" role="dialog">
       <div class="lb-top">
         <span id="lbCount"></span>
         <span style="display:flex;gap:8px;">
-          <a id="lbSave" class="lb-btn" href="#" target="_blank" rel="noopener" download>⬇ Salvar</a>
+          <button type="button" id="lbFav" class="lb-btn lb-fav" onclick="toggleFav(STATE.lightboxIndex)">♡</button>
+          ${payload.permitirDownload !== false ? `<a id="lbSave" class="lb-btn" href="#" target="_blank" rel="noopener" download>⬇ Salvar</a>` : ''}
           <button type="button" class="lb-btn" onclick="fecharLightbox()">✕ Fechar</button>
         </span>
       </div>
@@ -423,6 +535,85 @@ function renderGallery(payload) {
     </div>
   `;
   initLightbox();
+  carregarFavs();
+  STATE.onlyFavs = false;
+  atualizarFavs();
+}
+
+/* --------------------------- FAVORITAS --------------------------- */
+function toggleFav(i) {
+  if (STATE.favs.has(i)) STATE.favs.delete(i); else STATE.favs.add(i);
+  salvarFavs();
+  atualizarFavs();
+}
+function toggleSoFavs() {
+  STATE.onlyFavs = !STATE.onlyFavs;
+  atualizarFavs();
+}
+function atualizarFavs() {
+  const figs = document.querySelectorAll('#galleryGrid figure');
+  figs.forEach((fig, i) => {
+    const on = STATE.favs.has(i);
+    fig.classList.toggle('is-fav', on);
+    fig.classList.toggle('hide', STATE.onlyFavs && !on);
+    const b = fig.querySelector('.fav-btn');
+    if (b) b.textContent = on ? '♥' : '♡';
+  });
+  const n = STATE.favs.size;
+  if (n === 0) STATE.onlyFavs = false;
+  const bar = document.getElementById('favBar');
+  if (bar) {
+    bar.classList.toggle('show', n > 0);
+    document.body.classList.toggle('has-favbar', n > 0);
+    document.getElementById('favCount').textContent = '♥ ' + n + (n === 1 ? ' favorita' : ' favoritas');
+    document.getElementById('favFilterBtn').textContent = STATE.onlyFavs ? 'Ver todas' : 'Só favoritas';
+  }
+  const lbFav = document.getElementById('lbFav');
+  if (lbFav) {
+    const on = STATE.favs.has(STATE.lightboxIndex);
+    lbFav.textContent = on ? '♥ Favorita' : '♡ Favoritar';
+    lbFav.classList.toggle('on', on);
+  }
+}
+function enviarFavoritas() {
+  const p = STATE.payload;
+  const nums = [...STATE.favs].sort((a, b) => a - b).map(i => i + 1);
+  if (!nums.length || !p.whatsapp) return;
+  const msg = 'Olá! Sou ' + p.clienteNome + '. Escolhi ' + nums.length + ' foto' + (nums.length > 1 ? 's' : '') +
+    ' favorita' + (nums.length > 1 ? 's' : '') + (p.titulo ? ' da galeria "' + p.titulo + '"' : '') + ': ' + nums.join(', ') + '.';
+  window.open('https://wa.me/' + p.whatsapp + '?text=' + encodeURIComponent(msg), '_blank');
+}
+function carregarJSZip() {
+  return new Promise((resolve, reject) => {
+    if (window.JSZip) return resolve(window.JSZip);
+    const s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+    s.onload = () => resolve(window.JSZip);
+    s.onerror = () => reject(new Error('JSZip'));
+    document.head.appendChild(s);
+  });
+}
+async function baixarFavoritas() {
+  const idx = [...STATE.favs].sort((a, b) => a - b);
+  if (!idx.length) return;
+  toast('Preparando o ZIP das favoritas...');
+  try {
+    const JSZip = await carregarJSZip();
+    const zip = new JSZip();
+    for (const i of idx) {
+      const r = await fetch(STATE.payload.fotos[i]);
+      if (!r.ok) throw new Error('foto ' + (i + 1));
+      zip.file('foto-' + String(i + 1).padStart(3, '0') + '.jpg', await r.blob());
+    }
+    const blob = await zip.generateAsync({ type: 'blob' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'favoritas-mps-photography.zip';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 10000);
+  } catch (e) {
+    toast('Não foi possível montar o ZIP neste navegador. Abra cada foto e toque em Salvar.');
+  }
 }
 
 /* --------------------------- VISUALIZADOR EM TELA CHEIA --------------------------- */
@@ -446,8 +637,10 @@ function mostrarLightbox() {
   const i = STATE.lightboxIndex;
   const url = fotos[i];
   document.getElementById('lbImg').src = url;
-  document.getElementById('lbSave').href = url;
+  const save = document.getElementById('lbSave');
+  if (save) save.href = url;
   document.getElementById('lbCount').textContent = (i + 1) + ' / ' + fotos.length;
+  atualizarFavs();
 }
 function initLightbox() {
   const lb = document.getElementById('lightbox');
